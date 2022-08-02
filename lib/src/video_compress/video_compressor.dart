@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:video_compress/src/progress_callback/compress_mixin.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:video_compress/video_compress.dart';
+
+import '../../video_compress.dart';
+import '../progress_callback/compress_mixin.dart';
 
 abstract class IVideoCompress extends CompressMixin {}
 
@@ -123,8 +125,8 @@ extension Compress on IVideoCompress {
     String path, {
     VideoQuality quality = VideoQuality.DefaultQuality,
     bool deleteOrigin = false,
-    int? startTime,
-    int? duration,
+    double? startTime,
+    double? duration,
     bool? includeAudio,
     int frameRate = 30,
   }) async {
@@ -141,6 +143,7 @@ extension Compress on IVideoCompress {
 
     // ignore: invalid_use_of_protected_member
     setProcessingStatus(true);
+    print(startTime);
     final jsonStr = await _invoke<String>('compressVideo', {
       'path': path,
       'quality': quality.index,
