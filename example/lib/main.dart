@@ -1,8 +1,9 @@
+import 'dart:io';
+
+import 'package:broody_video/broody_video.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:video_compress/video_compress.dart';
-import 'package:file_selector/file_selector.dart';
-import 'dart:io';
 import 'package:video_compress_example/video_thumbnail.dart';
 
 void main() {
@@ -47,17 +48,9 @@ class _MyHomePageState extends State<MyHomePage> {
     if (file == null) {
       return;
     }
-    await VideoCompress.setLogLevel(0);
-    final info = await VideoCompress.compressVideo(
-      file.path,
-      quality: VideoQuality.MediumQuality,
-      deleteOrigin: false,
-      includeAudio: true,
+    final info = await BroodyVideo.instance.processClip(
+      sourceFile: file,
     );
-    print(info!.path);
-    setState(() {
-      _counter = info.path!;
-    });
   }
 
   @override
@@ -77,14 +70,6 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headline4,
             ),
-            InkWell(
-                child: Icon(
-                  Icons.cancel,
-                  size: 55,
-                ),
-                onTap: () {
-                  VideoCompress.cancelCompression();
-                }),
             ElevatedButton(
               onPressed: () {
                 Navigator.push(

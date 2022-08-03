@@ -59,6 +59,7 @@ class AvController: NSObject {
     }
     
     public func getMetaDataByTag(_ asset:AVAsset,key:String)->String {
+
         for item in asset.commonMetadata {
             if item.commonKey?.rawValue == key {
                 return item.stringValue ?? "";

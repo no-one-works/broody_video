@@ -3,6 +3,6 @@
 
 @implementation VideoCompressPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  [SwiftVideoCompressPlugin registerWithRegistrar:registrar];
+  [BroodyVideoPlugin registerWithRegistrar:registrar];
 }
 @end

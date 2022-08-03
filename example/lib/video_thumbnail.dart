@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:broody_video/broody_video.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:video_compress/video_compress.dart';
 
 class VideoThumbnail extends StatefulWidget {
   @override
@@ -10,7 +12,7 @@ class VideoThumbnail extends StatefulWidget {
 }
 
 class _VideoThumbnailState extends State<VideoThumbnail> {
-  File? _thumbnailFile;
+  Uint8List? _thumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +30,9 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
       }
 
       if (file != null) {
-        _thumbnailFile = await VideoCompress.getFileThumbnail(file.path);
+        final thumb = await BroodyVideo.instance.getThumbnail(sourceFile: file);
         setState(() {
-          print(_thumbnailFile);
+          _thumbnail = thumb;
         });
       } else {
         return null;
@@ -56,10 +58,10 @@ class _VideoThumbnailState extends State<VideoThumbnail> {
   }
 
   Widget _buildThumbnail() {
-    if (_thumbnailFile != null) {
+    if (_thumbnail != null) {
       return Container(
         padding: EdgeInsets.all(20.0),
-        child: Image(image: FileImage(_thumbnailFile!)),
+        child: Image(image: MemoryImage(_thumbnail!)),
       );
     }
     return Container();
