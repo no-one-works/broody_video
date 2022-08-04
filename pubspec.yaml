@@ -1,6 +1,6 @@
 name: broody_video
 description: The video manipulation library for broody. iOS only for now.
-version: 0.5.0
+version: 0.5.0-dev.1
 repository: https://github.com/timcreatedit/broody_video
 
 environment:
