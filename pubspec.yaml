@@ -22,12 +22,7 @@ dependencies:
 flutter:
   plugin:
     platforms:
-      android:
-        package: com.example.video_compress
-        pluginClass: VideoCompressPlugin
       ios:
-        pluginClass: VideoCompressPlugin
-      macos:
         pluginClass: VideoCompressPlugin
 
   # To add assets to your plugin package, add an assets section, like this:

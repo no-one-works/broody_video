@@ -58,7 +58,7 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
                         result: result)
             } catch {
                 print(error)
-                result(FlutterError(code: "compressVideo", message: "Failed to compress video", details: error))
+                result(FlutterError(code: "compressVideo", message: error.localizedDescription, details: error._code))
             }
             break
         case "clearCache":
@@ -119,9 +119,10 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
         }
 
         let composition = try makeComposition(asset: sourceVideoAsset, range: timeRange)!
-
+        let presets = AVAssetExportSession.exportPresets(compatibleWith: composition);
         let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality)!
-        exportSession.videoComposition = cropVideo(asset: sourceVideoAsset, renderSize: renderSize)
+        exportSession.videoComposition = cropVideo(asset: sourceVideoAsset, composition: composition,
+                renderSize: renderSize)
         exportSession.outputURL = compressionUrl
         exportSession.outputFileType = AVFileType.mp4
 
@@ -130,6 +131,9 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
 
         exportSession.exportAsynchronously(completionHandler: {
             timer.invalidate()
+            if let error = exportSession.error {
+                return result(FlutterError(code: "processClip", message: error.localizedDescription, details: error._code))
+            }
             return result(self.getMediaInfoJson(Utility.excludeEncoding(compressionUrl.path)))
         })
     }
@@ -142,22 +146,22 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
         let audioTrack = asset.tracks(withMediaType: .audio).first;
 
         let comp = AVMutableComposition();
-        guard let compVideoTrack = comp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid),
-              let compAudioTrack = comp.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        guard let compVideoTrack = comp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
         else {
             return nil
         }
         try compVideoTrack.insertTimeRange(range, of: videoTrack, at: .zero)
-        if let audioTrack = audioTrack {
+
+        if let audioTrack = audioTrack, let compAudioTrack = comp.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) {
             try compAudioTrack.insertTimeRange(range, of: audioTrack, at: .zero)
         }
         return comp
     }
 
 
-    private func cropVideo(asset: AVURLAsset, renderSize: CGSize?) -> AVVideoComposition {
+    private func cropVideo(asset: AVAsset, composition: AVMutableComposition, renderSize: CGSize?) -> AVVideoComposition {
         let track = asset.tracks(withMediaType: AVMediaType.video)[0]
-
+        let compTrack = composition.tracks(withMediaType: .video)[0]
         let trackSize = track.naturalSize.applying(track.preferredTransform)
         let renderSize = renderSize ?? track.naturalSize
 
@@ -171,16 +175,16 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
                 y: (renderSize.height - abs(newSize.height * ratio)) / 2)
         let finalTransform = scaleTransform
                 .concatenating(CGAffineTransform(translationX: offset.x, y: offset.y))
-        let transformer = AVMutableVideoCompositionLayerInstruction(assetTrack: track)
+        let transformer = AVMutableVideoCompositionLayerInstruction(assetTrack: compTrack)
         transformer.setTransform(finalTransform, at: .zero)
 
         let instruction = AVMutableVideoCompositionInstruction()
-        instruction.timeRange = CMTimeRange(start: .zero, duration: asset.duration)
+        instruction.timeRange = CMTimeRangeMake(start: .zero, duration: asset.duration)
         instruction.layerInstructions = [transformer]
 
         let videoComposition = AVMutableVideoComposition()
 
-        videoComposition.frameDuration = CMTime(value: 1, timescale: 30)
+        videoComposition.frameDuration = asset.tracks(withMediaType: .video)[0].minFrameDuration
         videoComposition.renderSize = renderSize
         videoComposition.instructions = [instruction]
         return videoComposition
@@ -203,15 +207,17 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
             let sourceVideoUrl = Utility.getPathUrl(sourcePath)
             let sourceVideoAsset = avController.getVideoAsset(sourceVideoUrl)
 
-            let sourceVideoTrack = sourceVideoAsset.tracks(withMediaType: .video)[0]
-            let sourceAudioTrack = sourceVideoAsset.tracks(withMediaType: .audio)[0]
-
+            let sourceVideoTrack = sourceVideoAsset.tracks(withMediaType: .video).first
+            let sourceAudioTrack = sourceVideoAsset.tracks(withMediaType: .audio).first
+            guard let sourceVideoTrack = sourceVideoTrack else { continue }
             try videoTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: sourceVideoAsset.duration), of: sourceVideoTrack, at: time)
-            try audioTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: sourceVideoAsset.duration), of: sourceAudioTrack, at: time)
+            if let sourceAudioTrack = sourceAudioTrack {
+                try audioTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: sourceVideoAsset.duration), of: sourceAudioTrack, at: time)
+            }
 
             time = CMTimeAdd(time, sourceVideoAsset.duration)
         }
-        Utility.deleteFile(destinationPath)
+        Utility.deleteFile(destinationPath, clear: true)
         let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough)!
         exportSession.outputURL = destinationUrl
         exportSession.outputFileType = AVFileType.mp4
