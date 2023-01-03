@@ -38,7 +38,7 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
                 let durationSeconds = args!["durationSeconds"] as! NSNumber?
                 let targetWidth = args!["targetWidth"] as! NSNumber?
                 let targetHeight = args!["targetHeight"] as! NSNumber?
-                try compressVideo(sourcePath: sourcePath,
+                try processClip(sourcePath: sourcePath,
                         startSeconds: startSeconds.doubleValue,
                         durationSeconds: durationSeconds?.doubleValue,
                         targetWidth: targetWidth?.int32Value,
@@ -90,7 +90,7 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
     }
 
 
-    private func compressVideo(sourcePath: String,
+    private func processClip(sourcePath: String,
                                startSeconds: Double,
                                durationSeconds: Double?,
                                targetWidth: Int32?,
@@ -104,7 +104,7 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
         let timescale = sourceVideoAsset.duration.timescale
         let videoDuration = sourceVideoAsset.duration.seconds
         let minDuration = Double(durationSeconds ?? videoDuration)
-        let maxDurationTime = startSeconds + minDuration < videoDuration ? minDuration : videoDuration
+        let maxDurationTime = startSeconds + minDuration <= videoDuration ? minDuration : videoDuration
 
         let cmStartTime = CMTimeMakeWithSeconds(startSeconds, preferredTimescale: timescale)
         let cmDurationTime = CMTimeMakeWithSeconds(maxDurationTime, preferredTimescale: timescale)
