@@ -1,7 +1,7 @@
-name: video_compress
-description: Light library of video manipulation of Flutter. Compress video, remove audio, get video thumbnail from dart code.
-version: 3.1.1
-homepage: https://github.com/jonataslaw/VideoCompress
+name: broody_video
+description: The video manipulation library for broody. iOS only for now.
+version: 0.5.0-dev.1
+repository: https://github.com/timcreatedit/broody_video
 
 environment:
   sdk: '>=2.16.2 <3.0.0'
@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  loading_value: ^0.0.2
 
 # dev_dependencies:
 #   flutter_test:
@@ -21,12 +22,7 @@ dependencies:
 flutter:
   plugin:
     platforms:
-      android:
-        package: com.example.video_compress
-        pluginClass: VideoCompressPlugin
       ios:
-        pluginClass: VideoCompressPlugin
-      macos:
         pluginClass: VideoCompressPlugin
 
   # To add assets to your plugin package, add an assets section, like this:

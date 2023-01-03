@@ -1,8 +1,8 @@
 #import "VideoCompressPlugin.h"
-#import <video_compress/video_compress-Swift.h>
+#import <broody_video/broody_video-Swift.h>
 
 @implementation VideoCompressPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
-  [SwiftVideoCompressPlugin registerWithRegistrar:registrar];
+  [BroodyVideoPlugin registerWithRegistrar:registrar];
 }
 @end

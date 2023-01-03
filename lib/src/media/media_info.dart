@@ -1,64 +1,55 @@
 import 'dart:io';
 
 class MediaInfo {
-  String? path;
-  String? title;
-  String? author;
-  int? width;
-  int? height;
+  final File file;
+  final int width;
+  final int height;
 
-  /// [Android] API level 17
-  int? orientation;
+  final Duration duration;
 
   /// bytes
-  int? filesize; // filesize
-  /// milliseconds
-  double? duration;
-  bool? isCancel;
-  File? file;
+  final int filesize;
 
-  MediaInfo({
-    required this.path,
+  final String? title;
+
+  final String? author;
+
+  /// [Android] API level 17
+  final int? orientation;
+
+  const MediaInfo({
+    required this.file,
+    required this.width,
+    required this.height,
+    required this.duration,
+    required this.filesize,
     this.title,
     this.author,
-    this.width,
-    this.height,
     this.orientation,
-    this.filesize,
-    this.duration,
-    this.isCancel,
-    this.file,
   });
 
-  MediaInfo.fromJson(Map<String, dynamic> json) {
-    path = json['path'];
-    title = json['title'];
-    author = json['author'];
-    width = json['width'];
-    height = json['height'];
-    orientation = json['orientation'];
-    filesize = json['filesize'];
-    duration = double.tryParse('${json['duration']}');
-    isCancel = json['isCancel'];
-    file = File(path!);
-  }
+  MediaInfo.fromJson(Map<String, dynamic> map)
+      : file = File(map["path"]),
+        width = map["width"],
+        height = map["height"],
+        duration = Duration(
+          milliseconds: (1000 * map["duration"]).toInt(),
+        ),
+        filesize = map["filesize"],
+        title = map["title"],
+        author = map["author"],
+        orientation = map["orientation"];
 
   Map<String, dynamic> toJson() {
     final data = <String, dynamic>{};
-    data['path'] = path;
+    data["path"] = file.path;
+    data["width"] = width;
+    data["height"] = height;
+    data['duration'] = duration;
+    data['filesize'] = filesize;
     data['title'] = title;
     data['author'] = author;
-    data['width'] = width;
-    data['height'] = height;
-    if (orientation != null) {
-      data['orientation'] = orientation;
-    }
-    data['filesize'] = filesize;
-    data['duration'] = duration;
-    if (isCancel != null) {
-      data['isCancel'] = isCancel;
-    }
-    data['file'] = File(path!).toString();
+    data['orientation'] = orientation;
     return data;
   }
 }

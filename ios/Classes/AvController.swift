@@ -22,6 +22,22 @@ class AvController: NSObject {
         group.wait()
         return track
     }
+
+    public func getAudioTrack(_ asset: AVURLAsset)->AVAssetTrack? {
+        var track : AVAssetTrack? = nil
+        let group = DispatchGroup()
+        group.enter()
+        asset.loadValuesAsynchronously(forKeys: ["tracks"], completionHandler: {
+            var error: NSError? = nil;
+            let status = asset.statusOfValue(forKey: "tracks", error: &error)
+            if (status == .loaded) {
+                track = asset.tracks(withMediaType: AVMediaType.audio).first
+            }
+            group.leave()
+        })
+        group.wait()
+        return track
+    }
     
     public func getVideoOrientation(_ path:String)-> Int? {
         let url = Utility.getPathUrl(path)
@@ -43,6 +59,7 @@ class AvController: NSObject {
     }
     
     public func getMetaDataByTag(_ asset:AVAsset,key:String)->String {
+
         for item in asset.commonMetadata {
             if item.commonKey?.rawValue == key {
                 return item.stringValue ?? "";
