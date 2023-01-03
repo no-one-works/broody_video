@@ -24,6 +24,9 @@ flutter:
     platforms:
       ios:
         pluginClass: VideoCompressPlugin
+      android:
+        package: com.example.broody_video
+        pluginClass: BroodyVideoPlugin
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:

@@ -1,4 +1,4 @@
-package com.example.video_compress
+package com.example.broody_video
 
 import android.content.Context
 import android.net.Uri
@@ -27,7 +27,7 @@ import java.util.concurrent.Future
 /**
  * VideoCompressPlugin
  */
-class VideoCompressPlugin : MethodCallHandler, FlutterPlugin {
+class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
 
 
     private var _context: Context? = null
