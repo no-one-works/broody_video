@@ -1,4 +1,4 @@
-package com.example.video_compress
+package com.example.broody_video
 
 import android.content.Context
 import android.graphics.Bitmap
