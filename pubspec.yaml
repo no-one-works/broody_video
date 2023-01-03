@@ -1,6 +1,6 @@
 name: broody_video
-description: Light library of video manipulation of Flutter. Compress video, remove audio, get video thumbnail from dart code.
-version: 3.1.1
+description: The video manipulation library for broody. iOS only for now.
+version: 0.5.0-dev.1
 repository: https://github.com/timcreatedit/broody_video
 
 environment:
