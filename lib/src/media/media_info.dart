@@ -45,7 +45,7 @@ class MediaInfo {
     data["path"] = file.path;
     data["width"] = width;
     data["height"] = height;
-    data['duration'] = duration;
+    data['duration'] = duration.inMilliseconds;
     data['filesize'] = filesize;
     data['title'] = title;
     data['author'] = author;
