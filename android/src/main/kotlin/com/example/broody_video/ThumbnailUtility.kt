@@ -10,8 +10,8 @@ import java.io.IOException
 class ThumbnailUtility(channelName: String) {
     private val utility = Utility(channelName)
 
-    fun getByteThumbnail(path: String, quality: Int, position: Long, result: MethodChannel.Result) {
-        val bmp = utility.getBitmap(path, position, result)
+    fun getByteThumbnail(path: String, quality: Int, positionSeconds: Double, result: MethodChannel.Result) {
+        val bmp = utility.getBitmap(path, positionSeconds, result)
 
         val stream = ByteArrayOutputStream()
         bmp.compress(Bitmap.CompressFormat.JPEG, quality, stream)
@@ -20,9 +20,9 @@ class ThumbnailUtility(channelName: String) {
         result.success(byteArray.toList().toByteArray())
     }
 
-    fun getFileThumbnail(context: Context, path: String, quality: Int, position: Long,
+    fun getFileThumbnail(context: Context, path: String, quality: Int, positionSeconds: Double,
                              result: MethodChannel.Result) {
-        val bmp = utility.getBitmap(path, position, result)
+        val bmp = utility.getBitmap(path, positionSeconds, result)
 
         val dir = context.getExternalFilesDir("video_compress")
 

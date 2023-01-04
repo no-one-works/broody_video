@@ -71,13 +71,16 @@ class Utility(private val channelName: String) {
         )
     }
 
-    fun getBitmap(path: String, position: Long, result: MethodChannel.Result): Bitmap {
+    fun getBitmap(path: String, positionSeconds: Double, result: MethodChannel.Result): Bitmap {
         var bitmap: Bitmap? = null
         val retriever = MediaMetadataRetriever()
 
         try {
             retriever.setDataSource(path)
-            bitmap = retriever.getFrameAtTime(position, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+            bitmap = retriever.getFrameAtTime(
+                (positionSeconds * 1_000_000).toLong(),
+                MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+            )
         } catch (ex: IllegalArgumentException) {
             result.error(channelName, "Assume this is a corrupt video file", null)
         } catch (ex: RuntimeException) {
