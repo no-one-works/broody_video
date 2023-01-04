@@ -31,7 +31,7 @@ class Utility(private val channelName: String) {
         return timeStamp.toLong()
     }
 
-    fun getMediaInfoJson(context: Context, path: String): JSONObject {
+    fun getMediaInfoJson(context: Context, path: String): Map<String, Any?> {
         val file = File(path)
         val retriever = MediaMetadataRetriever()
 
@@ -59,21 +59,16 @@ class Utility(private val channelName: String) {
         }
 
         retriever.release()
-
-        val json = JSONObject()
-
-        json.put("path", path)
-        json.put("title", title)
-        json.put("author", author)
-        json.put("width", width)
-        json.put("height", height)
-        json.put("duration", duration)
-        json.put("filesize", filesize)
-        if (ori != null) {
-            json.put("orientation", ori)
-        }
-
-        return json
+        return mapOf(
+            "path" to path,
+            "title" to title,
+            "author" to author,
+            "width" to width,
+            "height" to height,
+            "duration" to duration,
+            "filesize" to filesize,
+            "orientation" to ori
+        )
     }
 
     fun getBitmap(path: String, position: Long, result: MethodChannel.Result): Bitmap {
