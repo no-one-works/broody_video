@@ -82,8 +82,9 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                     source
                 }
 
+                datasource.initialize()
                 val transcoder = Transcoder.into(destPath)
-                    .addDataSource( datasource)
+                    .addDataSource(datasource)
 
                 transcodeFuture = transcoder
                     .setVideoTrackStrategy(strategy)
@@ -93,6 +94,7 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
 
             }
             "concatVideos" -> {
+
                 val srcPaths = call.argument<List<String>>("sourcePaths")!!
                 val destPath = call.argument<String>("destinationPath")!!
                 val transcoder = Transcoder.into(destPath)
@@ -101,6 +103,7 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                     val datasource = FileDescriptorDataSource(inputStream.fd)
                     transcoder.addDataSource(datasource)
                 }
+                //FIXME this will fail if videos with audio are mixed with videos without audio. We were so close
                 transcodeFuture = transcoder.setListener(
                     VideoTransformationListener(
                         channel,
