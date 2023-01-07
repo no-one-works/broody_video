@@ -51,7 +51,6 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                     tempDir + File.separator + "VID_" + out + sourcePath.hashCode() + ".mp4"
 
                 val sourcePathUri = Uri.parse(sourcePath)
-
                 val strategy = if (targetWidth != null && targetHeight != null) {
                     DefaultVideoStrategy.Builder()
                         .addResizer(MyExactResizer(targetWidth, targetHeight))
@@ -59,20 +58,15 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                 } else {
                     PassThroughTrackStrategy()
                 }
-                val audioStrategy =
-                    DefaultAudioStrategy.builder()
-                        .channels(2)
-                        .sampleRate(44100)
-                        .build()
-
-
+                val audioStrategy = PassThroughTrackStrategy()
                 val source = UriDataSource(context, sourcePathUri)
                 val datasource = if (durationSeconds != null) {
                     val startMicroSeconds = ((startSeconds ?: 0.0) * 1_000_000)
                         .toLong()
-                    ClipDataSource(
+                    val durationMicroSeconds = durationSeconds.times(1_000_000).toLong()
+                    TrimDataSource(
                         source, startMicroSeconds,
-                        (startMicroSeconds + (durationSeconds * 1_000_000).toLong())
+                        startMicroSeconds + durationMicroSeconds
                     )
                 } else if (startSeconds != null) {
                     TrimDataSource(
@@ -82,19 +76,14 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                     source
                 }
 
-                datasource.initialize()
-                val transcoder = Transcoder.into(destPath)
+                transcodeFuture = Transcoder.into(destPath)
                     .addDataSource(datasource)
-
-                transcodeFuture = transcoder
                     .setVideoTrackStrategy(strategy)
                     .setAudioTrackStrategy(audioStrategy)
                     .setListener(VideoTransformationListener(channel, result, destPath, context))
                     .transcode()
-
             }
             "concatVideos" -> {
-
                 val srcPaths = call.argument<List<String>>("sourcePaths")!!
                 val destPath = call.argument<String>("destinationPath")!!
                 val transcoder = Transcoder.into(destPath)
