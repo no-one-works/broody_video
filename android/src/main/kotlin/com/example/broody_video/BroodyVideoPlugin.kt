@@ -58,9 +58,9 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                 } else {
                     PassThroughTrackStrategy()
                 }
-                val audioStrategy = PassThroughTrackStrategy()
+                val audioStrategy = DefaultAudioStrategy.builder().build()
                 val source = UriDataSource(context, sourcePathUri)
-                val datasource = if (durationSeconds != null) {
+                val videoDataSource = if (durationSeconds != null) {
                     val startMicroSeconds = ((startSeconds ?: 0.0) * 1_000_000)
                         .toLong()
                     val durationMicroSeconds = durationSeconds.times(1_000_000).toLong()
@@ -76,8 +76,16 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                     source
                 }
 
+                val audioDataSource = if (videoDataSource.getTrackFormat(TrackType.VIDEO) == null) {
+                    videoDataSource.initialize()
+                    BlankAudioDataSource(videoDataSource.durationUs)
+                } else {
+                    videoDataSource
+                }
+
                 transcodeFuture = Transcoder.into(destPath)
-                    .addDataSource(datasource)
+                    .addDataSource(TrackType.VIDEO, videoDataSource)
+                    .addDataSource(TrackType.AUDIO, audioDataSource)
                     .setVideoTrackStrategy(strategy)
                     .setAudioTrackStrategy(audioStrategy)
                     .setListener(VideoTransformationListener(channel, result, destPath, context))
