@@ -1,6 +1,7 @@
 package com.example.broody_video
 
 import android.content.Context
+import android.util.Log
 import com.linkedin.android.litr.TransformationListener
 import com.linkedin.android.litr.analytics.TrackTransformationInfo
 import com.otaliastudios.transcoder.TranscoderListener
@@ -20,7 +21,7 @@ class VideoTranscoderListener(
     }
 
     override fun onTranscodeCompleted(successCode: Int) {
-        channel.invokeMethod("updateProgress", 100.00)
+        channel.invokeMethod("updateProgress", 1)
         val resultMap = Utility(BroodyVideoPlugin.channelName).getMediaInfoJson(context, destPath)
         result.success(resultMap)
 
@@ -53,14 +54,14 @@ class VideoTransformationListener(
     }
 
     override fun onProgress(id: String, progress: Float) {
-        channel.invokeMethod("updateProgress", progress)
+        channel.invokeMethod("updateProgress", progress.toString())
     }
 
     override fun onCompleted(
         id: String,
         trackTransformationInfos: MutableList<TrackTransformationInfo>?
     ) {
-        channel.invokeMethod("updateProgress", 100.00)
+        channel.invokeMethod("updateProgress", 1)
         val resultMap = Utility(BroodyVideoPlugin.channelName).getMediaInfoJson(context, destPath)
         result.success(resultMap)
     }
@@ -77,6 +78,7 @@ class VideoTransformationListener(
         cause: Throwable?,
         trackTransformationInfos: MutableList<TrackTransformationInfo>?
     ) {
+        Log.e("TRANSCODE", "Transcode failed", cause)
         result.error(
             "transform failed",
             cause?.localizedMessage,

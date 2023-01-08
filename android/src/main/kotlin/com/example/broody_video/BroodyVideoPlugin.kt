@@ -53,12 +53,12 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                     null
                 }
                 broodyTranscoder!!.transcodeClip(
-                    context,
-                    sourcePath,
+                   sourcePath,
                     destPath,
-                    size,
-                    startSeconds,
-                    durationSeconds
+                    VideoTransformationListener(channel, result, destPath, context),
+                    startSeconds = startSeconds,
+                    durationSeconds = durationSeconds,
+                    ensureAudioTrack = true,
                 )
             }
             "concatVideos" -> {
