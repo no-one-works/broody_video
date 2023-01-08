@@ -76,7 +76,7 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                     source
                 }
 
-                val audioDataSource = if (videoDataSource.getTrackFormat(TrackType.VIDEO) == null) {
+                val audioDataSource = if (videoDataSource.getTrackFormat(TrackType.AUDIO) == null) {
                     videoDataSource.initialize()
                     BlankAudioDataSource(videoDataSource.durationUs)
                 } else {
