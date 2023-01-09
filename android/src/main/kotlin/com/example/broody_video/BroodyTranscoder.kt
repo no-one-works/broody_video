@@ -40,16 +40,6 @@ class BroodyTranscoder(private val context: Context) {
         val sourcePathUri = Uri.parse(sourcePath)
         val destPathUri = Uri.fromFile(File(destPath))
         val range = getMediaRange(startSeconds, durationSeconds)
-        val transformationOptions =
-            TransformationOptions.Builder().setSourceMediaRange(range).setVideoFilters(
-                listOf(DefaultVideoFrameRenderFilter(
-                    Transform(
-                        PointF(1f, 1f),
-                        PointF(0.5f, 0.5f),
-                        0f
-                    )
-                ))
-            ).build()
 
         transcodeClip(
             sourcePathUri,
@@ -58,8 +48,8 @@ class BroodyTranscoder(private val context: Context) {
             mute = mute,
             ensureAudioTrack = ensureAudioTrack,
             removeMetadata = removeMetadata,
-            transformationOptions = transformationOptions,
-            size = size
+            size = size,
+            mediaRange = range,
         )
     }
 
@@ -70,12 +60,13 @@ class BroodyTranscoder(private val context: Context) {
         mute: Boolean = false,
         ensureAudioTrack: Boolean = false,
         removeMetadata: Boolean = false,
-        transformationOptions: TransformationOptions? = null,
         size: Pair<Int, Int>? = null,
+        mediaRange: MediaRange? = null,
     ) {
-        val options = transformationOptions ?: TransformationOptions.Builder().build()
+        val range = mediaRange ?: MediaRange(0, Long.MAX_VALUE)
+
         val mediaSource =
-            MediaExtractorMediaSource(context, sourcePathUri, options.sourceMediaRange)
+            MediaExtractorMediaSource(context, sourcePathUri, range)
         val outputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
         val trackFormats: MutableList<MediaFormat> = mutableListOf()
         for (track in 0 until mediaSource.trackCount) {
@@ -105,7 +96,7 @@ class BroodyTranscoder(private val context: Context) {
             outputFormat
         )
         val targetVideoFormat = buildTargetVideoFormat(sourceVideoFormat, size)
-        val targetAudioFormat = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        val targetAudioFormat =
             MediaFormat.createAudioFormat(
                 MediaFormat.MIMETYPE_AUDIO_AAC,
                 41000,
@@ -113,9 +104,19 @@ class BroodyTranscoder(private val context: Context) {
             ).apply {
                 setInteger(MediaFormat.KEY_BIT_RATE, 256_000)
             }
-        } else {
-            null
-        }
+
+        val options =
+            TransformationOptions.Builder().setSourceMediaRange(range).setVideoFilters(
+                listOf(
+                    DefaultVideoFrameRenderFilter(
+                        Transform(
+                            getScale(sourceVideoFormat, size),
+                            PointF(0.5f, 0.5f),
+                            0f
+                        )
+                    )
+                )
+            ).build()
 
         val trackTransforms: MutableList<TrackTransform> = mutableListOf()
         for (trackIndex in trackFormats.indices) {
@@ -145,10 +146,10 @@ class BroodyTranscoder(private val context: Context) {
         if (sourceAudioFormat == null && ensureAudioTrack) {
             trackTransforms.add(
                 buildBlankAudioMediaTransform(
-                    trackTransforms.size,
-                    mediaSource,
+                    forMediaSource = mediaSource,
+                    atTrackIndex = trackTransforms.size,
                     mediaTarget,
-                    targetAudioFormat!!,
+                    targetAudioFormat,
                 )
             )
         }
@@ -163,7 +164,7 @@ class BroodyTranscoder(private val context: Context) {
     private fun buildTargetVideoFormat(
         sourceVideoFormat: MediaFormat,
         size: Pair<Int, Int>?,
-    ): MediaFormat? {
+    ): MediaFormat {
         return MediaFormat.createVideoFormat(
             MediaFormat.MIMETYPE_VIDEO_AVC,
             size?.first ?: sourceVideoFormat.getInteger(MediaFormat.KEY_WIDTH),
@@ -180,28 +181,48 @@ class BroodyTranscoder(private val context: Context) {
     }
 
     private fun buildBlankAudioMediaTransform(
-        trackIndex: Int,
-        mediaSource: MediaSource,
+        forMediaSource: MediaSource,
+        atTrackIndex: Int,
         mediaTarget: MediaTarget,
         targetFormat: MediaFormat,
     ): TrackTransform {
         val encoder = MediaCodecEncoder()
         val durationUs = min(
-            mediaSource.getTrackFormat(0).getLong(MediaFormat.KEY_DURATION),
-            mediaSource.selection.end - mediaSource.selection.start,
+            forMediaSource.getTrackFormat(0).getLong(MediaFormat.KEY_DURATION),
+            forMediaSource.selection.end - forMediaSource.selection.start,
         )
         Log.i(TAG, "Adding blank audio source with duration $durationUs")
         val trackTransformBuilder = TrackTransform.Builder(
             BlankAudioMediaSource(durationUs), 0, mediaTarget
         )
         trackTransformBuilder
-            .setTargetTrack(trackIndex)
+            .setTargetTrack(atTrackIndex)
             .setTargetFormat(targetFormat)
             .setDecoder(MediaCodecDecoder())
             .setEncoder(encoder)
             .setRenderer(AudioRenderer(encoder, mutableListOf()))
 
         return trackTransformBuilder.build()
+    }
+
+    private fun getScale(
+        mediaFormat: MediaFormat,
+        targetSize: Pair<Int, Int>? = null
+    ): PointF {
+        if (!mediaFormat.containsKey(MediaFormat.KEY_WIDTH) || !mediaFormat.containsKey(MediaFormat.KEY_HEIGHT) || targetSize == null) {
+            return PointF(1f, 1f)
+        }
+        val width = mediaFormat.getInteger(MediaFormat.KEY_WIDTH)
+        val height = mediaFormat.getInteger(MediaFormat.KEY_HEIGHT)
+        val sourceAspect = width.toFloat() / height.toFloat()
+        val targetAspect = targetSize.first.toFloat() / targetSize.second.toFloat()
+        return if (sourceAspect > targetAspect) {
+            // Source is wider than targetFrame so we scale up width
+            PointF(sourceAspect / targetAspect, 1f)
+        } else {
+            // Source is taller than target frame so we scale up height
+            PointF(1f, targetAspect / sourceAspect)
+        }
     }
 
     private fun getMimeType(mediaFormat: MediaFormat): String? {
