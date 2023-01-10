@@ -10,10 +10,13 @@ import android.os.Build
 import android.util.Log
 import com.linkedin.android.litr.MediaTransformer
 import com.linkedin.android.litr.TrackTransform
+import com.linkedin.android.litr.TransformationListener
 import com.linkedin.android.litr.TransformationOptions
+import com.linkedin.android.litr.analytics.TrackTransformationInfo
 import com.linkedin.android.litr.codec.MediaCodecDecoder
 import com.linkedin.android.litr.codec.MediaCodecEncoder
 import com.linkedin.android.litr.exception.MediaTargetException
+import com.linkedin.android.litr.exception.MediaTransformationException
 import com.linkedin.android.litr.filter.Transform
 import com.linkedin.android.litr.filter.video.gl.DefaultVideoFrameRenderFilter
 import com.linkedin.android.litr.io.*
@@ -25,6 +28,7 @@ import kotlin.math.min
 
 class BroodyTranscoder(private val context: Context) {
     private var _mediaTransformer: MediaTransformer = MediaTransformer(context)
+    var currentTranscodeId: String? = null
 
     fun transcodeClip(
         sourcePath: String,
@@ -37,6 +41,9 @@ class BroodyTranscoder(private val context: Context) {
         removeMetadata: Boolean = false,
         size: Pair<Int, Int>? = null,
     ) {
+        if (currentTranscodeId != null) {
+            throw IllegalStateException("A transcode is already running")
+        }
         val sourcePathUri = Uri.parse(sourcePath)
         val destPathUri = Uri.fromFile(File(destPath))
         val range = getMediaRange(startSeconds, durationSeconds)
@@ -53,7 +60,7 @@ class BroodyTranscoder(private val context: Context) {
         )
     }
 
-    fun transcodeClip(
+    private fun transcodeClip(
         sourcePathUri: Uri,
         destPathUri: Uri,
         listener: VideoTransformationListener,
@@ -157,11 +164,49 @@ class BroodyTranscoder(private val context: Context) {
             )
         }
         _mediaTransformer.transform(
-            UUID.randomUUID().toString(),
+            TAG,
             trackTransforms,
-            listener,
+            object : TransformationListener {
+                override fun onStarted(id: String) {
+                    listener.onStarted(id)
+                }
+
+                override fun onProgress(id: String, progress: Float) {
+                    listener.onProgress(id, progress)
+                }
+
+                override fun onCompleted(
+                    id: String,
+                    trackTransformationInfos: MutableList<TrackTransformationInfo>?
+                ) {
+                    currentTranscodeId = null
+                    listener.onCompleted(id, trackTransformationInfos)
+                }
+
+                override fun onCancelled(
+                    id: String,
+                    trackTransformationInfos: MutableList<TrackTransformationInfo>?
+                ) {
+                    currentTranscodeId = null
+                    listener.onCancelled(id, trackTransformationInfos)
+                }
+
+                override fun onError(
+                    id: String,
+                    cause: Throwable?,
+                    trackTransformationInfos: MutableList<TrackTransformationInfo>?
+                ) {
+                    currentTranscodeId = null
+                    listener.onError(id, cause, trackTransformationInfos)
+                }
+
+            },
             options.granularity
         )
+    }
+
+    fun cancelTranscode() {
+        _mediaTransformer.cancel(currentTranscodeId!!)
     }
 
     private fun buildTargetVideoFormat(

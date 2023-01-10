@@ -25,4 +25,8 @@ abstract class BroodyVideoInterface {
   });
 
   Future<void> clearCache();
+
+  Future<void> cancelProcessClip();
+
+  Future<void> cancelConcatVideos();
 }

@@ -3,7 +3,8 @@ import AVFoundation
 
 public class BroodyVideoPlugin: NSObject, FlutterPlugin {
     static let channelName = "broody_video"
-    private var exporter: AVAssetExportSession? = nil
+    private var clipExportSession: AVAssetExportSession? = nil
+    private var concatExportSession: AVAssetExportSession? = nil
     private let channel: FlutterMethodChannel
     private let avController = AvController()
 
@@ -33,6 +34,9 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
             break
         case "processClip":
             do {
+                if (clipExportSession != nil) {
+                    result(FlutterError(code: "processClip", message: "A clip is already being processed", details: nil))
+                }
                 let sourcePath = args!["sourcePath"] as! String
                 let startSeconds = args!["startSeconds"] as! NSNumber
                 let durationSeconds = args!["durationSeconds"] as! NSNumber?
@@ -46,10 +50,13 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
                         result: result)
             } catch {
                 print(error)
-                result(FlutterError(code: "compressVideo", message: "Failed to compress video", details: error))
+                result(FlutterError(code: "compressVideo", message: "Failed to compress video", details: error._code))
             }
             break
         case "concatVideos":
+            if (concatExportSession != nil) {
+                result(FlutterError(code: "concatVideos", message: "A clip is already being concatenated", details: nil))
+            }
             do {
                 let sourcePaths = args!["sourcePaths"] as! [String]
                 let destinationPath = args!["destinationPath"] as! String
@@ -64,6 +71,12 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
         case "clearCache":
             Utility.deleteFile(Utility.basePath(), clear: true)
             result(true)
+            break
+        case "cancelProcessClip":
+            cancelProcessClip(result)
+            break
+        case "cancelConcatVideos":
+            cancelConcatVideos(result)
             break
         default:
             result(FlutterMethodNotImplemented)
@@ -128,9 +141,10 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
 
         let timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.updateProgress),
                 userInfo: exportSession, repeats: true)
-
+        clipExportSession = exportSession
         exportSession.exportAsynchronously(completionHandler: {
             timer.invalidate()
+            self.clipExportSession = nil
             if let error = exportSession.error {
                 return result(FlutterError(code: "processClip", message: error.localizedDescription, details: error._code))
             }
@@ -211,11 +225,10 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
             let sourceAudioTrack = sourceVideoAsset.tracks(withMediaType: .audio).first
             guard let sourceVideoTrack = sourceVideoTrack else { continue }
             try videoTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: sourceVideoAsset.duration), of: sourceVideoTrack, at: time)
-            if let sourceAudioTrack = sourceAudioTrack {
-                try audioTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: sourceVideoAsset.duration), of: sourceAudioTrack, at: time)
-            }
-
             time = CMTimeAdd(time, sourceVideoAsset.duration)
+            
+            guard let sourceAudioTrack = sourceAudioTrack else {continue}
+            try audioTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: sourceVideoAsset.duration), of: sourceAudioTrack, at: time)
         }
         Utility.deleteFile(destinationPath, clear: true)
         let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough)!
@@ -224,9 +237,10 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
 
         let timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.updateProgress),
                 userInfo: exportSession, repeats: true)
-
+        concatExportSession = exportSession
         exportSession.exportAsynchronously(completionHandler: {
             timer.invalidate()
+            self.concatExportSession = nil
             return result(self.getMediaInfoJson(Utility.excludeEncoding(destinationUrl.path)))
         })
     }
@@ -270,8 +284,13 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
         channel.invokeMethod("updateProgress", arguments: String(describing: asset.progress))
     }
 
-    private func cancelCompression(_ result: FlutterResult) {
-        exporter?.cancelExport()
+    private func cancelProcessClip(_ result: FlutterResult) {
+        clipExportSession?.cancelExport()
+        result(nil)
+    }
+    
+    private func cancelConcatVideos(_ result: FlutterResult) {
+        concatExportSession?.cancelExport()
         result(nil)
     }
 
