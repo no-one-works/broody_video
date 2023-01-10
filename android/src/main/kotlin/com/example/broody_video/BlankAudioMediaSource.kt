@@ -84,7 +84,7 @@ class BlankAudioMediaSource(
     private fun bytesToUs(
         bytes: Int
     ): Long {
-        val byteRatePerChannel = SAMPLE_RATE * 2
+        val byteRatePerChannel = SAMPLE_RATE * 2 //bytes per sample
         val byteRate = byteRatePerChannel * CHANNEL_COUNT
         return MICROSECONDS_PER_SECOND * bytes / byteRate
     }

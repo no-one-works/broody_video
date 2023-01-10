@@ -58,7 +58,6 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                     VideoTransformationListener(channel, result, destPath, context),
                     startSeconds = startSeconds,
                     durationSeconds = durationSeconds,
-                    //TODO setting this to true will break things
                     ensureAudioTrack = true,
                     size = size,
                 )

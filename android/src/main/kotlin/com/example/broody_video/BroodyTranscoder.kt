@@ -67,7 +67,6 @@ class BroodyTranscoder(private val context: Context) {
 
         val mediaSource =
             MediaExtractorMediaSource(context, sourcePathUri, range)
-        val outputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
         val trackFormats: MutableList<MediaFormat> = mutableListOf()
         for (track in 0 until mediaSource.trackCount) {
             val format = mediaSource.getTrackFormat(track);
@@ -75,6 +74,8 @@ class BroodyTranscoder(private val context: Context) {
                 trackFormats.add(format)
             }
         }
+        val outputFormat = MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4
+
         // Extract source formats
         val sourceVideoFormat = trackFormats.firstOrNull {
             getMimeType(it)?.startsWith("video") ?: false
@@ -102,6 +103,7 @@ class BroodyTranscoder(private val context: Context) {
                 41000,
                 2,
             ).apply {
+                //TODO check if this value makes sense
                 setInteger(MediaFormat.KEY_BIT_RATE, 256_000)
             }
 
@@ -119,6 +121,7 @@ class BroodyTranscoder(private val context: Context) {
             ).build()
 
         val trackTransforms: MutableList<TrackTransform> = mutableListOf()
+        // Build TrackTransforms for original tracks from mediaSource that we want to include
         for (trackIndex in trackFormats.indices) {
             val format = trackFormats[trackIndex]
             val mimeType = getMimeType(format)!!
@@ -143,12 +146,12 @@ class BroodyTranscoder(private val context: Context) {
             trackTransforms.add(trackTransformBuilder.build())
         }
 
-        if (sourceAudioFormat == null && ensureAudioTrack) {
+        if (addBlankAudio) {
             trackTransforms.add(
                 buildBlankAudioMediaTransform(
                     forMediaSource = mediaSource,
+                    mediaTarget = mediaTarget,
                     atTrackIndex = trackTransforms.size,
-                    mediaTarget,
                     targetAudioFormat,
                 )
             )
@@ -182,11 +185,10 @@ class BroodyTranscoder(private val context: Context) {
 
     private fun buildBlankAudioMediaTransform(
         forMediaSource: MediaSource,
-        atTrackIndex: Int,
         mediaTarget: MediaTarget,
+        atTrackIndex: Int,
         targetFormat: MediaFormat,
     ): TrackTransform {
-        val encoder = MediaCodecEncoder()
         val durationUs = min(
             forMediaSource.getTrackFormat(0).getLong(MediaFormat.KEY_DURATION),
             forMediaSource.selection.end - forMediaSource.selection.start,
@@ -195,6 +197,7 @@ class BroodyTranscoder(private val context: Context) {
         val trackTransformBuilder = TrackTransform.Builder(
             BlankAudioMediaSource(durationUs), 0, mediaTarget
         )
+        val encoder = MediaCodecEncoder()
         trackTransformBuilder
             .setTargetTrack(atTrackIndex)
             .setTargetFormat(targetFormat)
