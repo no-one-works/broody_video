@@ -53,7 +53,7 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
                     null
                 }
                 broodyTranscoder!!.transcodeClip(
-                   sourcePath,
+                    sourcePath,
                     destPath,
                     VideoTransformationListener(channel, result, destPath, context),
                     startSeconds = startSeconds,
@@ -94,6 +94,17 @@ class BroodyVideoPlugin : MethodCallHandler, FlutterPlugin {
             }
             "clearCache" -> {
                 result.success(Utility(channelName).deleteAllCache(context, result));
+            }
+            "cancelProcessClip" -> {
+                broodyTranscoder?.cancelTranscode()
+                result.success(null)
+            }
+            "cancelConcatVideos" -> {
+                if (transcodeFuture?.isCancelled != false) {
+                    return
+                }
+                transcodeFuture?.cancel(true)
+                result.success(null)
             }
             else -> {
                 result.notImplemented()

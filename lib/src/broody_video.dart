@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui';
 
 import 'package:broody_video/src/broody_video_interface.dart';
 import 'package:broody_video/src/media/media_info.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:loading_value/loading_value.dart';
 
@@ -140,6 +139,16 @@ class BroodyVideo implements BroodyVideoInterface {
 
   Future<void> clearCache() async {
     await _channel.invokeMethod("clearCache");
+  }
+
+  Future<void> cancelProcessClip() async {
+    debugPrint("Cancelling current processing");
+    await _channel.invokeMethod("cancelProcessClip");
+  }
+
+  Future<void> cancelConcatVideos() async {
+    debugPrint("Cancelling concatenation");
+    await _channel.invokeMethod("cancelConcatVideos");
   }
 
   Future<void> _methodCallHandler(MethodCall call) async {
