@@ -225,10 +225,11 @@ public class BroodyVideoPlugin: NSObject, FlutterPlugin {
             let sourceAudioTrack = sourceVideoAsset.tracks(withMediaType: .audio).first
             guard let sourceVideoTrack = sourceVideoTrack else { continue }
             try videoTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: sourceVideoAsset.duration), of: sourceVideoTrack, at: time)
-            time = CMTimeAdd(time, sourceVideoAsset.duration)
             
-            guard let sourceAudioTrack = sourceAudioTrack else {continue}
-            try audioTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: sourceVideoAsset.duration), of: sourceAudioTrack, at: time)
+            if let sourceAudioTrack = sourceAudioTrack {
+                         try audioTrack.insertTimeRange(CMTimeRangeMake(start: .zero, duration: sourceVideoAsset.duration), of: sourceAudioTrack, at: time)
+                     }
+            time = CMTimeAdd(time, sourceVideoAsset.duration)
         }
         Utility.deleteFile(destinationPath, clear: true)
         let exportSession = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough)!
